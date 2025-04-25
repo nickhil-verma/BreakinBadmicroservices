@@ -42,5 +42,26 @@ router.post('/submit', async (req, res) => {
     return res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
+// GET: Retrieve data for a specific device using uniqueId
+router.get('/:uniqueId', async (req, res) => {
+    const { uniqueId } = req.params;
+  
+    if (!uniqueId || uniqueId.length !== 10) {
+      return res.status(400).json({ error: 'Invalid uniqueId' });
+    }
+  
+    try {
+      const userData = await UserData.findOne({ uniqueId });
+  
+      if (!userData) {
+        return res.status(404).json({ error: 'Device not found' });
+      }
+  
+      return res.status(200).json({ data: userData });
+    } catch (error) {
+      return res.status(500).json({ error: 'Server error', details: error.message });
+    }
+  });
+  
 
 module.exports = router;
