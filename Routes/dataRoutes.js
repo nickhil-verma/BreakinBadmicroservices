@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const UserData = require('../models/UserData');
 
-// POST: Add new data (always creates new document)
+// POST: Update or insert user data
 router.post('/submit', async (req, res) => {
   const { uniqueId, o2, heartRateECG, temperature } = req.body;
 
@@ -11,31 +11,35 @@ router.post('/submit', async (req, res) => {
   }
 
   try {
-    const newEntry = new UserData({
-      uniqueId,
-      o2: [o2],
-      heartRateECG: [heartRateECG],
-      temperature: [temperature]
-    });
+    const userData = await UserData.findOne({ uniqueId });
 
-    await newEntry.save();
-    res.status(201).json({ message: 'New data saved successfully' });
+    if (userData) {
+      // Append new values
+      userData.o2.push(o2);
+      userData.heartRateECG.push(heartRateECG);
+      userData.temperature.push(temperature);
 
-  } catch (error) {
-    res.status(500).json({ error: 'Server error', details: error.message });
-  }
-});
+      // Keep only the latest 300 values
+      userData.o2 = userData.o2.slice(-300);
+      userData.heartRateECG = userData.heartRateECG.slice(-300);
+      userData.temperature = userData.temperature.slice(-300);
 
-// GET: Get all data entries for a specific ID
-router.get('/data/:uniqueId', async (req, res) => {
-  try {
-    const data = await UserData.find({ uniqueId: req.params.uniqueId });
-    if (!data || data.length === 0) {
-      return res.status(404).json({ error: 'No data found for this ID' });
+      await userData.save();
+      return res.status(200).json({ message: 'Data updated successfully' });
+    } else {
+      // Create new document if not exists
+      const newEntry = new UserData({
+        uniqueId,
+        o2: [o2],
+        heartRateECG: [heartRateECG],
+        temperature: [temperature],
+      });
+
+      await newEntry.save();
+      return res.status(201).json({ message: 'New data created successfully' });
     }
-    res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ error: 'Server error', details: error.message });
+    return res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
