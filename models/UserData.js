@@ -8,7 +8,8 @@ const userDataSchema = new mongoose.Schema({
   },
   o2: [Number],
   heartRateECG: [Number],
-  temperature: [Number]
+  temperature: [Number],
+  ecgPeak: [Number]  // 🆕 Added this line for ECG peak values
 }, { timestamps: true });
 
 module.exports = mongoose.model('UserData', userDataSchema);
